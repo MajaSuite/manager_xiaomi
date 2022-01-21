@@ -1,18 +1,9 @@
-package packet
+package miio
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
-	"errors"
-	"net"
-	"strconv"
 )
-
-var ErrInvalidPacketType = errors.New("invalid packet type")
-var ErrInvalidPacketLength = errors.New("invalid packet Len")
-var ErrUnknownPacket = errors.New("unknown packet type")
-var ErrReadFromBuf = errors.New("error read data from buffer")
 
 func WriteInt8(buf []byte, offset int, value uint8) int {
 	buf[offset] = value
@@ -83,37 +74,6 @@ func ReadBytes(buf []byte, offset int, length int) ([]byte, int, error) {
 func ReadString(buf []byte, offset int, length int) (string, int, error) {
 	s, i, e := ReadBytes(buf, offset, length)
 	return string(s), i, e
-}
-
-func ReadPacket(conn net.Conn) ([]byte, error) {
-	var magic, size uint16
-	var err error
-
-	reader := bufio.NewReader(conn)
-
-	header := make([]byte, 4)
-	if _, err := reader.Read(header); err != nil {
-		return nil, err
-	}
-
-	if magic, _, err = ReadInt16(header, 0); err != nil {
-		return nil, err
-	}
-	if magic != 0x2131 {
-		return nil, errors.New("wrong magic " + strconv.Itoa(int(magic)))
-	}
-
-	if size, _, err = ReadInt16(header, 2); err != nil {
-		return nil, err
-	}
-	res := make([]byte, size)
-	WriteInt16(res, 0, magic)
-	WriteInt16(res, 2, size)
-	if _, err = reader.Read(res[4:]); err != nil {
-		return nil, err
-	}
-
-	return res, nil
 }
 
 // Pad using PKCS5 padding scheme.
