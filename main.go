@@ -2,10 +2,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/MajaSuite/mqtt/packet"
 	"github.com/MajaSuite/mqtt/transport"
 	"log"
 	"manager_xiaomi/miio"
+	"time"
 )
 
 var (
@@ -26,21 +28,21 @@ func main() {
 	if *reg {
 		log.Println("new device registration")
 
-		io := miio.NewMiio("192.168.4.1")
-		if io == nil {
+		device := miio.NewDevice("192.168.4.1")
+		if device == nil {
 			panic("can't init device")
 		}
 
-		hello, err := io.Hello()
+		hello, err := device.Hello()
 		if err != nil {
 			panic(err)
 		}
 		log.Println("Hello packet", hello.String())
 
-		info, err := io.Info()
+		info, err := device.Info()
 		log.Println("Info packet", info.String())
 
-		register, err := io.Reg(*sid, *key)
+		register, err := device.Reg(*sid, *key)
 		log.Println("Register packet", register.String())
 		return
 	}
@@ -63,6 +65,31 @@ func main() {
 	mqtt.Sendout <- sp
 	mqttId++
 
-	//devices := make(map[string]*xiaomi.Device)
+	devices := make(map[uint32]*miio.Device)
+	// fetch command data from mqtt server
+	go func() {
+		//
+	}()
+	time.Sleep(time.Second * 2)
 
+	discovery := miio.NewDiscovery()
+	for d := range discovery.Reporter {
+		if devices[d.Id] == nil {
+			log.Printf("new device: %s", d.String())
+			//d.Start(updates)
+
+			p := packet.NewPublish()
+			p.Id = mqttId
+			p.Topic = fmt.Sprintf("xiaomi/%s", d.Id)
+			p.QoS = 1
+			p.Payload = fmt.Sprintf(`{"id":"%s","model":"%s","name":"%s"}`, d.Id, d.Model, d.Name)
+			p.Retain = true
+			//mqtt.Sendout <- p
+			mqttId++
+		} else {
+			d.Close()
+			log.Printf("device: %s", d.String())
+
+		}
+	}
 }

@@ -1,7 +1,6 @@
 package miio
 
 import (
-	"bytes"
 	"encoding/binary"
 )
 
@@ -74,22 +73,4 @@ func ReadBytes(buf []byte, offset int, length int) ([]byte, int, error) {
 func ReadString(buf []byte, offset int, length int) (string, int, error) {
 	s, i, e := ReadBytes(buf, offset, length)
 	return string(s), i, e
-}
-
-// Pad using PKCS5 padding scheme.
-func pkcs5Pad(data []byte, blockSize int) []byte {
-	length := len(data)
-	padLength := (blockSize - (length % blockSize))
-	pad := bytes.Repeat([]byte{byte(padLength)}, padLength)
-	return append(data, pad...)
-}
-
-// Unpad using PKCS5 padding scheme.
-func pkcs5Unpad(data []byte, blockSize int) ([]byte, error) {
-	srcLen := len(data)
-	paddingLen := int(data[srcLen-1])
-	if paddingLen >= srcLen || paddingLen > blockSize {
-		return nil, ErrPadding
-	}
-	return data[:srcLen-paddingLen], nil
 }

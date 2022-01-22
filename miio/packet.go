@@ -119,6 +119,22 @@ func ParsePacket(deviceId uint32, deviceToken []byte, buf []byte) (*Packet, erro
 	return packet, nil
 }
 
+func (p *Packet) pkcs5Pad(data []byte, blockSize int) []byte {
+	length := len(data)
+	padLength := (blockSize - (length % blockSize))
+	pad := bytes.Repeat([]byte{byte(padLength)}, padLength)
+	return append(data, pad...)
+}
+
+func (p *Packet) pkcs5Unpad(data []byte, blockSize int) ([]byte, error) {
+	srcLen := len(data)
+	paddingLen := int(data[srcLen-1])
+	if paddingLen >= srcLen || paddingLen > blockSize {
+		return nil, ErrPadding
+	}
+	return data[:srcLen-paddingLen], nil
+}
+
 func (p *Packet) Pack() ([]byte, error) {
 	var buf []byte = make([]byte, 16)
 	var offset int = 0
@@ -197,7 +213,7 @@ func (p *Packet) Decrypt() ([]byte, error) {
 	decrypted := make([]byte, len(p.Data))
 	stream.CryptBlocks(decrypted, p.Data)
 
-	return pkcs5Unpad(decrypted, block.BlockSize())
+	return p.pkcs5Unpad(decrypted, block.BlockSize())
 }
 
 func (p *Packet) Encrypt(payload []byte) error {
@@ -210,7 +226,7 @@ func (p *Packet) Encrypt(payload []byte) error {
 		return err
 	}
 
-	data := pkcs5Pad(payload, block.BlockSize())
+	data := p.pkcs5Pad(payload, block.BlockSize())
 	stream := cipher.NewCBCEncrypter(block, p.iv)
 
 	encrypted := make([]byte, len(data))

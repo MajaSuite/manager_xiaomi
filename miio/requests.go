@@ -45,7 +45,11 @@ func (r credentials) String() string {
 	return fmt.Sprintf(`{"ssid":"%s","passwd":"%s","uid":"%s"}`, r.SID, r.Pass, r.Uid)
 }
 
-func (x *Miio) Hello() (*Packet, error) {
+/*
+ Method Hello should be called before start any communication with device
+ Important things is set update, timestamp and token
+*/
+func (x *Device) Hello() (*Packet, error) {
 	hello, err := x.PacketHello()
 	if err != nil {
 		return nil, err
@@ -68,17 +72,17 @@ func (x *Miio) Hello() (*Packet, error) {
 		return nil, err
 	}
 
-	x.id = pkt.DeviceId
-	x.token = pkt.CheckSum
-	x.uptime = pkt.Timestamp
-	x.timestamp = uint32(time.Now().Unix())
+	x.Id = pkt.DeviceId
+	x.Token = pkt.CheckSum
+	x.Uptime = pkt.Timestamp
+	x.Timestamp = uint32(time.Now().Unix())
 
 	return pkt, nil
 }
 
-func (x *Miio) Info() (*Packet, error) {
+func (x *Device) Info() (*Packet, error) {
 	req := request{
-		Id:     x.uptime,
+		Id:     x.Uptime,
 		Method: "miIO.info",
 	}
 
@@ -87,7 +91,7 @@ func (x *Miio) Info() (*Packet, error) {
 		return nil, err
 	}
 
-	p, err := x.Packet(x.id, x.token, uint32(time.Now().Unix())-x.timestamp+x.uptime, payload)
+	p, err := x.Packet(x.Id, x.Token, uint32(time.Now().Unix())-x.Timestamp+x.Uptime, payload)
 	if err != nil {
 		panic(err)
 	}
@@ -104,7 +108,7 @@ func (x *Miio) Info() (*Packet, error) {
 	}
 
 	// parse received packet
-	pkt, err := ParsePacket(x.id, x.token, recv)
+	pkt, err := ParsePacket(x.Id, x.Token, recv)
 	if err != nil {
 		return nil, err
 	}
@@ -112,9 +116,9 @@ func (x *Miio) Info() (*Packet, error) {
 	return pkt, nil
 }
 
-func (x *Miio) Reg(sid string, pass string) (*Packet, error) {
+func (x *Device) Reg(sid string, pass string) (*Packet, error) {
 	req := request{
-		Id:     x.uptime,
+		Id:     x.Uptime,
 		Method: "miIO.config_router",
 		Params: &credentials{SID: sid, Pass: pass},
 	}
@@ -124,7 +128,7 @@ func (x *Miio) Reg(sid string, pass string) (*Packet, error) {
 		return nil, err
 	}
 
-	p, err := x.Packet(x.id, x.token, uint32(time.Now().Unix())-x.timestamp+x.uptime, payload)
+	p, err := x.Packet(x.Id, x.Token, uint32(time.Now().Unix())-x.Timestamp+x.Uptime, payload)
 	if err != nil {
 		panic(err)
 	}
@@ -141,7 +145,7 @@ func (x *Miio) Reg(sid string, pass string) (*Packet, error) {
 	}
 
 	// parse received packet
-	pkt, err := ParsePacket(x.id, x.token, recv)
+	pkt, err := ParsePacket(x.Id, x.Token, recv)
 	if err != nil {
 		return nil, err
 	}
