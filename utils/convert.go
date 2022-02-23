@@ -1,8 +1,19 @@
-package miio
+package utils
 
 import (
 	"encoding/binary"
+	"errors"
+	"strconv"
 )
+
+var (
+	ErrReadFromBuf = errors.New("error read data from buffer")
+)
+
+func ConvertHex(v string) uint32 {
+	res, _ := strconv.ParseUint(v, 16, 64)
+	return uint32(res)
+}
 
 func WriteInt8(buf []byte, offset int, value uint8) int {
 	buf[offset] = value
